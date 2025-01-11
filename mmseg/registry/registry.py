@@ -45,15 +45,15 @@ HOOKS = Registry(
 
 # manage data-related modules
 DATASETS = Registry(
-    'dataset', parent=MMENGINE_DATASETS, locations=['mmseg.datasets'])
+    'dataset', parent=MMENGINE_DATASETS, locations=['mmseg.datasets', 'mmseg.nighttime_utils'])
 DATA_SAMPLERS = Registry('data sampler', parent=MMENGINE_DATA_SAMPLERS)
 TRANSFORMS = Registry(
     'transform',
     parent=MMENGINE_TRANSFORMS,
-    locations=['mmseg.datasets.transforms'])
+    locations=['mmseg.datasets.transforms', 'mmseg.nighttime_utils'])
 
 # mangage all kinds of modules inheriting `nn.Module`
-MODELS = Registry('model', parent=MMENGINE_MODELS, locations=['mmseg.models'])
+MODELS = Registry('model', parent=MMENGINE_MODELS, locations=['mmseg.models', 'mmseg.nighttime_utils'])
 # mangage all kinds of model wrappers like 'MMDistributedDataParallel'
 MODEL_WRAPPERS = Registry(
     'model_wrapper',

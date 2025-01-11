@@ -120,10 +120,11 @@ class SegVisualizationHook(Hook):
             img_bytes = get(img_path, backend_args=self.backend_args)
             img = mmcv.imfrombytes(img_bytes, channel_order='rgb')
 
-            self._visualizer.add_datasample(
-                window_name,
-                img,
-                data_sample=data_sample,
-                show=self.show,
-                wait_time=self.wait_time,
-                step=self._test_index)
+            if self._test_index % self.interval == 0:
+                self._visualizer.add_datasample(
+                    window_name,
+                    img,
+                    data_sample=data_sample,
+                    show=self.show,
+                    wait_time=self.wait_time,
+                    step=self._test_index)

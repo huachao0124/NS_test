@@ -1,5 +1,5 @@
 _base_ = '../upernet/upernet_r50_4xb2-80k_cityscapes-512x1024.py'
-model = dict(pretrained='open-mmlab://resnet101_v1c', backbone=dict(depth=101))
+model = dict(pretrained='ckpts/resnet101_v1c-e67eebb6.pth', backbone=dict(depth=101))
 
 # dataset settings
 train_data_root = 'data/nightcity-fine/'

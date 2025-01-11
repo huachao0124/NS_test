@@ -10,7 +10,9 @@ model = dict(
         num_heads=[4, 8, 16, 32],
         window_size=12,
         init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
-    decode_head=dict(in_channels=[128, 256, 512, 1024]))
+    decode_head=dict(pixel_decoder=dict(
+                        type='MSDeformAttnPixelDecoderFreqAware'),
+                    in_channels=[128, 256, 512, 1024]))
 
 # set all layers in backbone to lr_mult=0.1
 # set all norm layers, position_embeding,
@@ -41,32 +43,23 @@ custom_keys.update({
 optim_wrapper = dict(
     paramwise_cfg=dict(custom_keys=custom_keys, norm_decay_mult=0.0))
 
+# dataset settings
+train_data_root = 'data/nightcity-fine/'
+test_data_root = 'data/nightcity-fine/'
+train_dataloader = dict(
+    dataset=dict(
+        data_root=train_data_root,
+        data_prefix=dict(
+            img_path='train/img', seg_map_path='train/lbl'),
+        img_suffix='.png',
+        seg_map_suffix='_trainIds.png'))
+val_dataloader = dict(
+    dataset=dict(
+        data_root=test_data_root,
+        data_prefix=dict(
+            img_path='val/img', seg_map_path='val/lbl'),
+        img_suffix='.png',
+        seg_map_suffix='_trainIds.png'))
+test_dataloader = val_dataloader
 
-crop_size = (512, 1024)
-# dataset config
-train_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='HSVDarker'),
-    dict(type='LoadAnnotations'),
-    dict(
-        type='RandomChoiceResize',
-        scales=[int(1024 * x * 0.1) for x in range(5, 21)],
-        resize_type='ResizeShortestEdge',
-        max_size=4096),
-    dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
-    dict(type='RandomFlip', prob=0.5),
-    dict(type='PhotoMetricDistortion'),
-    dict(type='PackSegInputs')
-]
-train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
-
-test_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='HSVDarker'),
-    dict(type='Resize', scale=(2048, 1024), keep_ratio=True),
-    # add loading annotation after ``Resize`` because ground truth
-    # does not need to do resize data transform
-    dict(type='LoadAnnotations'),
-    dict(type='PackSegInputs')
-]
-test_dataloader = dict(dataset=dict(pipeline=test_pipeline))
+default_hooks = dict(visualization=dict(type='SegVisualizationHook', draw=True, interval=20))

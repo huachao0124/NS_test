@@ -40,33 +40,3 @@ custom_keys.update({
 # optimizer
 optim_wrapper = dict(
     paramwise_cfg=dict(custom_keys=custom_keys, norm_decay_mult=0.0))
-
-
-crop_size = (512, 1024)
-# dataset config
-train_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='HSVDarker'),
-    dict(type='LoadAnnotations'),
-    dict(
-        type='RandomChoiceResize',
-        scales=[int(1024 * x * 0.1) for x in range(5, 21)],
-        resize_type='ResizeShortestEdge',
-        max_size=4096),
-    dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
-    dict(type='RandomFlip', prob=0.5),
-    dict(type='PhotoMetricDistortion'),
-    dict(type='PackSegInputs')
-]
-train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
-
-test_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='HSVDarker'),
-    dict(type='Resize', scale=(2048, 1024), keep_ratio=True),
-    # add loading annotation after ``Resize`` because ground truth
-    # does not need to do resize data transform
-    dict(type='LoadAnnotations'),
-    dict(type='PackSegInputs')
-]
-test_dataloader = dict(dataset=dict(pipeline=test_pipeline))

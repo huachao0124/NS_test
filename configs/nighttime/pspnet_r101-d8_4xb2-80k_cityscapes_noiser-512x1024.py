@@ -21,7 +21,8 @@ train_dataloader = dict(dataset=dict(pipeline=train_pipeline))
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
-    # dict(type='HSVDarker'),
+    dict(type='AddNoisyImg', model='PGRU', camera='CanonEOS5D4',
+         cfa='bayer', use_255=True, pre_adjust_brightness=False, mode='addnoise', dark_ratio=(1.0, 1.0), noise_ratio=(10, 100)), # here
     dict(type='Resize', scale=(2048, 1024), keep_ratio=True),
     # add loading annotation after ``Resize`` because ground truth
     # does not need to do resize data transform
@@ -29,3 +30,4 @@ test_pipeline = [
     dict(type='PackSegInputs')
 ]
 test_dataloader = dict(dataset=dict(pipeline=test_pipeline))
+val_dataloader = test_dataloader

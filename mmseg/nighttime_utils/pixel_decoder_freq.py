@@ -234,7 +234,7 @@ class MSDeformAttnPixelDecoderFreqAware(BaseModule):
             _, hr_feat, lr_feat = self.freqfusions[idx](hr_feat=encoder_input_list[idx + 1], lr_feat=encoder_input_list[idx], use_checkpoint=False)
             encoder_input_list[idx + 1] = hr_feat + lr_feat
         # ==================================================================================
-        encoder_input_list = [feat_projected.flatten(2).permute(0, 2, 1) for feat_projected in encoder_input_list]
+        encoder_input_list = [feat_projected.flatten(2).permute(0, 2, 1).contiguous() for feat_projected in encoder_input_list]
 
         # shape (batch_size, total_num_queries),
         # total_num_queries=sum([., h_i * w_i,.])
@@ -271,7 +271,7 @@ class MSDeformAttnPixelDecoderFreqAware(BaseModule):
         outs = torch.split(memory, num_queries_per_level, dim=-1)
         outs = [
             x.reshape(batch_size, -1, spatial_shapes[i][0],
-                      spatial_shapes[i][1]) for i, x in enumerate(outs)
+                      spatial_shapes[i][1]).contiguous() for i, x in enumerate(outs)    # 不添加contiguous梯度会有问题
         ]
 
         for i in range(self.num_input_levels - self.num_encoder_levels - 1, -1,

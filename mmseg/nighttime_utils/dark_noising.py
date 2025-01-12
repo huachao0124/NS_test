@@ -343,7 +343,7 @@ class AddNoisyImg(NoiseModel):
             else:
                 raise NotImplementedError
         
-        
+        results['img'] = results['noisy_img']
         # results['img_fields'].append('noisy_img')
         # results['img_fields'].append('ori_img')
         return results

@@ -62,4 +62,4 @@ val_dataloader = dict(
         seg_map_suffix='_trainIds.png'))
 test_dataloader = val_dataloader
 
-default_hooks = dict(visualization=dict(type='SegVisualizationHook', draw=True, interval=20))
+default_hooks = dict(visualization=dict(type='SegVisualizationHook', draw=False, interval=20))

@@ -95,7 +95,7 @@ class NoiseModel(BaseTransform):
         self.camera = camera
         if param_dir is None:
             try:
-                self.param_dir = '/mnt/search01/usr/xiaosong/zhuhuachao/codes/mmsegmentation/mmseg/nighttime_utils/camera_params'
+                self.param_dir = 'mmseg/nighttime_utils/camera_params'
             except:
                 print('please specify the location of camera parameters, e.g., ~/code/mmdetection/mmdet/datasets/pipelines/noisemodel/camera_params')
                 raise Exception

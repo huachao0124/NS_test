@@ -42,7 +42,7 @@ class HSVDarker(BaseTransform):
 
 @TRANSFORMS.register_module()
 class MotionBlur(BaseTransform):
-    def __init__(self, json_file='/mnt/search01/usr/xiaosong/zhuhuachao/codes/mmsegmentation/mmseg/nighttime_utils/motion_blur_params.json'):
+    def __init__(self, json_file='mmseg/nighttime_utils/motion_blur_params.json'):
         with open(json_file, 'r', encoding='utf-8') as file:
             self.motion_blur_params = json.load(file)
 

@@ -9,3 +9,4 @@ mim install "mmpretrain>=1.0.0rc8"
 mim install mmdet
 pip install -v -e .
 pip install ftfy
+python -m pip install ujson

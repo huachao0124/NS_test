@@ -44,7 +44,25 @@ param_scheduler = [
 ]
 
 # By default, models are trained on 8 GPUs with 2 images per GPU
-train_dataloader = dict(batch_size=4,
-                        num_workers=16)
-val_dataloader = dict(batch_size=1)
+# dataset settings
+train_data_root = 'data/nightcity-fine/'
+test_data_root = 'data/nightcity-fine/'
+# By default, models are trained on 8 GPUs with 2 images per GPU
+train_dataloader = dict(
+    batch_size=4,
+    num_workers=16,
+    dataset=dict(
+        data_root=train_data_root,
+        data_prefix=dict(
+            img_path='train/img', seg_map_path='train/lbl'),
+        img_suffix='.png',
+        seg_map_suffix='_trainIds.png'))
+val_dataloader = dict(
+    batch_size=1,
+    dataset=dict(
+        data_root=test_data_root,
+        data_prefix=dict(
+            img_path='val/img', seg_map_path='val/lbl'),
+        img_suffix='.png',
+        seg_map_suffix='_trainIds.png'))
 test_dataloader = val_dataloader

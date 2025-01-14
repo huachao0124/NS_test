@@ -46,7 +46,7 @@ crop_size = (512, 1024)
 # dataset config
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='HSVDarker'),
+    dict(type='MotionBlur'),
     dict(type='LoadAnnotations'),
     dict(
         type='RandomChoiceResize',
@@ -63,7 +63,7 @@ train_dataloader = dict(num_workers=4,
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='HSVDarker'),
+    dict(type='MotionBlur'),
     dict(type='Resize', scale=(2048, 1024), keep_ratio=True),
     # add loading annotation after ``Resize`` because ground truth
     # does not need to do resize data transform

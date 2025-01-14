@@ -43,8 +43,40 @@ param_scheduler = [
     )
 ]
 
+
+crop_size = (512, 1024)
+# dataset config
+train_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(type='AddNoisyImg', model='PGRU', camera='CanonEOS5D4',
+         cfa='bayer', use_255=True, pre_adjust_brightness=False, mode='addnoise', dark_ratio=(1.0, 1.0), noise_ratio=(10, 100)), # here
+    dict(type='LoadAnnotations'),
+    dict(
+        type='RandomChoiceResize',
+        scales=[int(1024 * x * 0.1) for x in range(5, 21)],
+        resize_type='ResizeShortestEdge',
+        max_size=4096),
+    dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PhotoMetricDistortion'),
+    dict(type='PackSegInputs')
+]
+
+test_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(type='AddNoisyImg', model='PGRU', camera='CanonEOS5D4',
+         cfa='bayer', use_255=True, pre_adjust_brightness=False, mode='addnoise', dark_ratio=(1.0, 1.0), noise_ratio=(10, 100)), # here
+    dict(type='Resize', scale=(2048, 1024), keep_ratio=True),
+    # add loading annotation after ``Resize`` because ground truth
+    # does not need to do resize data transform
+    dict(type='LoadAnnotations'),
+    dict(type='PackSegInputs')
+]
+
 # By default, models are trained on 8 GPUs with 2 images per GPU
 train_dataloader = dict(batch_size=4,
-                        num_workers=16)
-val_dataloader = dict(batch_size=1)
+                        num_workers=16,
+                        dataset=dict(pipeline=train_pipeline))
+val_dataloader = dict(batch_size=1,
+                        dataset=dict(pipeline=test_pipeline))
 test_dataloader = val_dataloader

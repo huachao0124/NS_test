@@ -46,7 +46,8 @@ crop_size = (512, 1024)
 # dataset config
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='HSVDarker'),
+    dict(type='AddNoisyImg', model='PGRU', camera='CanonEOS5D4',
+         cfa='bayer', use_255=True, pre_adjust_brightness=False, mode='addnoise', dark_ratio=(1.0, 1.0), noise_ratio=(10, 100)),
     dict(type='LoadAnnotations'),
     dict(
         type='RandomChoiceResize',
@@ -63,7 +64,8 @@ train_dataloader = dict(num_workers=4,
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='HSVDarker'),
+    dict(type='AddNoisyImg', model='PGRU', camera='CanonEOS5D4',
+         cfa='bayer', use_255=True, pre_adjust_brightness=False, mode='addnoise', dark_ratio=(1.0, 1.0), noise_ratio=(10, 100)),
     dict(type='Resize', scale=(2048, 1024), keep_ratio=True),
     # add loading annotation after ``Resize`` because ground truth
     # does not need to do resize data transform

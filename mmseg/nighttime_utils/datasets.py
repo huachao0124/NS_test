@@ -42,15 +42,16 @@ class HSVDarker(BaseTransform):
 
 @TRANSFORMS.register_module()
 class MotionBlur(BaseTransform):
-    def __init__(self):
-        self.param_map = dict()
+    def __init__(self, json_file='/mnt/search01/usr/xiaosong/zhuhuachao/codes/mmsegmentation/mmseg/nighttime_utils/motion_blur_params.json'):
+        with open(json_file, 'r', encoding='utf-8') as file:
+            self.motion_blur_params = json.load(file)
 
     def transform(self, results: dict) -> dict:
         image = results['img']
-        if results['sample_idx'] not in self.param_map:
-            self.param_map['sample_idx'] = dict(degree=random.randint(5, 20),
-                                                angle=random.uniform(0, 360))
-        results['img'] = self.apply_motion_blur(image, **self.param_map['sample_idx'])
+        if 'train' in results['img_path']:
+            results['img'] = self.apply_motion_blur(image, **self.motion_blur_params[results['sample_idx']])
+        else:
+            results['img'] = self.apply_motion_blur(image, **self.motion_blur_params[results['sample_idx'] + 5000])
         return results
 
     def apply_motion_blur(self, img, degree=15, angle=45):
@@ -63,3 +64,14 @@ class MotionBlur(BaseTransform):
         # 对图像应用滤波
         blurred = cv2.filter2D(img, -1, kernel_motion_blur)
         return blurred
+
+
+@TRANSFORMS.register_module()
+class LoadLogits(BaseTransform):
+    def __init__(self):
+        self.param_map = dict()
+
+    def transform(self, results: dict) -> dict:
+        print("X" * 100)
+        print(results['img_path'])
+        return results

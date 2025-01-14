@@ -61,7 +61,7 @@ train_data_root = 'data/nightcity-fine/'
 test_data_root = 'data/nightcity-fine/'
 train_dataloader = dict(
     batch_size=4,
-    num_workers=4,
+    num_workers=16,
     dataset=dict(
         data_root=train_data_root,
         data_prefix=dict(
@@ -77,4 +77,30 @@ val_dataloader = dict(
         seg_map_suffix='_trainIds.png'))
 test_dataloader = val_dataloader
 
-default_hooks = dict(visualization=dict(type='SegVisualizationHook', draw=True, interval=20))
+# optimizer
+optim_wrapper = dict(
+    _delete_=True,
+    type='OptimWrapper',
+    optimizer=dict(
+        type='AdamW', lr=0.00006, betas=(0.9, 0.999), weight_decay=0.01),
+    paramwise_cfg=dict(
+        custom_keys={
+            'pos_block': dict(decay_mult=0.),
+            'norm': dict(decay_mult=0.),
+            'head': dict(lr_mult=10.)
+        }))
+
+param_scheduler = [
+    dict(
+        type='LinearLR', start_factor=1e-6, by_epoch=False, begin=0, end=1500),
+    dict(
+        type='PolyLR',
+        power=1.0,
+        begin=1500,
+        end=160000,
+        eta_min=0.0,
+        by_epoch=False,
+    )
+]
+
+default_hooks = dict(visualization=dict(type='SegVisualizationHook', draw=False, interval=20))

@@ -43,7 +43,7 @@ param_scheduler = [
     )
 ]
 
-data_root = 'data/cityscapes_noised'
+data_root = 'data/cityscapes_night'
 # By default, models are trained on 8 GPUs with 2 images per GPU
 train_dataloader = dict(batch_size=4,
                         num_workers=16,

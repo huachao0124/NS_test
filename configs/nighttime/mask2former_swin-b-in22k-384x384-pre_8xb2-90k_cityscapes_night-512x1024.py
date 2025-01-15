@@ -41,7 +41,7 @@ custom_keys.update({
 optim_wrapper = dict(
     paramwise_cfg=dict(custom_keys=custom_keys, norm_decay_mult=0.0))
 
-data_root = 'data/cityscapes_noised'
+data_root = 'data/cityscapes_night'
 # By default, models are trained on 8 GPUs with 2 images per GPU
 train_dataloader = dict(num_workers=16,
                         dataset=dict(data_root=data_root))

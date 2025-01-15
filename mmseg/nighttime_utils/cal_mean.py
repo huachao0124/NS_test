@@ -35,5 +35,6 @@ def calculate_average_gray(folder_path):
     return overall_mean, gray_values
 
 # 使用示例
-folder_path = "data/cityscapes/leftImg8bit/**/**/*.png"  # 替换为你的图像文件夹路径
+# folder_path = "data/cityscapes/leftImg8bit/**/**/*.png"  # 替换为你的图像文件夹路径
+folder_path = 'data/nightcity-fine/**/img/*.png'
 calculate_average_gray(folder_path)

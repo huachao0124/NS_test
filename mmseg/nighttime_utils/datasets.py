@@ -41,6 +41,15 @@ class HSVDarker(BaseTransform):
 
 
 @TRANSFORMS.register_module()
+class BetaDarker(BaseTransform):
+    def transform(self, results: dict, beta: int = -40) -> dict:
+        image = results['img']
+        darker_image_bgr = cv2.convertScaleAbs(image_rgb, alpha=1, beta=beta)
+        results['img'] = dark_image_bgr
+        return results
+
+
+@TRANSFORMS.register_module()
 class MotionBlur(BaseTransform):
     def __init__(self, json_file='mmseg/nighttime_utils/motion_blur_params.json'):
         with open(json_file, 'r', encoding='utf-8') as file:

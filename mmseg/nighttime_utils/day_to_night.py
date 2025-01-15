@@ -109,107 +109,80 @@ class DayToNight:
         img = cv2.merge([b, g, r])
         
         # 降噪
-        img = cv2.fastNlMeansDenoisingColored(img, None, 10, 10, 7, 21)
+        # img = cv2.fastNlMeansDenoisingColored(img, None, 10, 10, 7, 21)
         
         return img
     
-    def convert_to_night(self, save_path, random_seed=None):
+    def process_single_image(self, args):
         """
-        转换所有日景图像并保存
+        处理单张图像
+        """
+        i, day_img, day_img_path = args
+        
+        # 随机选择一张夜景图像
+        night_idx = np.random.randint(len(self.night_images))
+        night_img = self.night_images[night_idx]
+        
+        # 直方图匹配
+        result1 = self.histogram_matching(day_img, night_img)
+        
+        # 颜色迁移
+        result2 = self.color_transfer(day_img, night_img)
+        
+        # 混合两种结果
+        result = cv2.addWeighted(result1, 0.5, result2, 0.5, 0)
+        
+        # 后处理
+        result = self.post_process(result)
+        
+        # 生成保存路径
+        save_path = day_img_path.replace('cityscapes', 'cityscapes_night')
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+        # 保存结果
+        cv2.imwrite(save_path, result)
+        
+        return i
+
+    def convert_to_night(self, save_path, random_seed=None, num_threads=8):
+        """
+        使用多线程转换所有日景图像并保存
         """
         if random_seed is not None:
             np.random.seed(random_seed)
             
         if not os.path.exists(save_path):
             os.makedirs(save_path)
-        
-        for i, day_img in enumerate(tqdm(self.day_images, desc="转换图像")):
-            # 随机选择一张夜景图像
-            night_idx = np.random.randint(len(self.night_images))
-            night_img = self.night_images[night_idx]
-            
-            # 直方图匹配
-            result1 = self.histogram_matching(day_img, night_img)
-            
-            # 颜色迁移
-            result2 = self.color_transfer(day_img, night_img)
-            
-            # 混合两种结果
-            result = cv2.addWeighted(result1, 0.5, result2, 0.5, 0)
-            
-            # 后处理
-            result = self.post_process(result)
-            
-            save_path = self.day_image_paths[i].replace('cityscapes', 'cityscapes_night')
-            os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
-            # 保存结果
-            cv2.imwrite(save_path, result)
-    
-    def show_results(self, day_idx=0, n_samples=4):
-        """
-        显示转换结果
-        """
-        if day_idx >= len(self.day_images):
-            print("无效的索引")
-            return
-        
-        day_img = self.day_images[day_idx]
-        
-        # 随机选择几张夜景图像
-        selected_night_imgs = np.random.choice(self.night_images, 
-                                             size=min(n_samples, len(self.night_images)), 
-                                             replace=False)
-        
-        plt.figure(figsize=(15, 10))
-        
-        # 显示原始日景图像
-        plt.subplot(2, n_samples, 1)
-        plt.imshow(cv2.cvtColor(day_img, cv2.COLOR_BGR2RGB))
-        plt.title('原始日景图像')
-        plt.axis('off')
-        
-        # 显示每个随机选择的夜景参考图像及其对应的转换结果
-        for i, night_img in enumerate(selected_night_imgs):
-            # 显示夜景参考图像
-            plt.subplot(2, n_samples, i + 2)
-            plt.imshow(cv2.cvtColor(night_img, cv2.COLOR_BGR2RGB))
-            plt.title(f'夜景参考图像 {i+1}')
-            plt.axis('off')
-            
-            # 转换
-            result_hist = self.histogram_matching(day_img, night_img)
-            result_color = self.color_transfer(day_img, night_img)
-            
-            result = cv2.addWeighted(result_hist, 0.5, result_color, 0.5, 0)
-            result = self.post_process(result)
-            
-            # 显示转换结果
-            plt.subplot(2, n_samples, n_samples + i + 1)
-            plt.imshow(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
-            plt.title(f'转换结果 {i+1}')
-            plt.axis('off')
-        
-        plt.tight_layout()
-        plt.show()
+        # 准备处理参数
+        process_args = [
+            (i, img, path) 
+            for i, (img, path) in enumerate(zip(self.day_images, self.day_image_paths))
+        ]
+
+        # 创建线程池
+        with ThreadPoolExecutor(max_workers=num_threads) as executor:
+            # 使用tqdm显示进度
+            list(tqdm(
+                executor.map(self.process_single_image, process_args),
+                total=len(self.day_images),
+                desc=f"使用{num_threads}个线程转换图像"
+            ))
 
 def main():
     # 创建转换器实例
     converter = DayToNight()
     
     # 设置输入输出路径
-    day_path = "data/cityscapes/leftImg8bit/train/**/*.png"    # 日景图像文件夹
-    night_path = "data/nightcity-fine/train/img/*.png"  # 夜景图像文件夹
-    save_path = "results"      # 结果保存文件夹
+    day_path = "data/cityscapes/leftImg8bit/**/**/*.png"
+    night_path = "data/nightcity-fine/**/img/*.png"
+    save_path = "results"
     
     # 加载图像
     converter.load_images(day_path, night_path)
     
-    # 显示一些示例结果
-    # converter.show_results(day_idx=0, n_samples=4)
-    
-    # 转换所有图像
-    converter.convert_to_night(save_path, random_seed=42)
+    # 转换所有图像，使用8个线程
+    converter.convert_to_night(save_path, random_seed=42, num_threads=32)
 
 if __name__ == "__main__":
     main()

@@ -44,7 +44,7 @@ class HSVDarker(BaseTransform):
 class BetaDarker(BaseTransform):
     def transform(self, results: dict, beta: int = -40) -> dict:
         image = results['img']
-        darker_image_bgr = cv2.convertScaleAbs(image_rgb, alpha=1, beta=beta)
+        darker_image_bgr = cv2.convertScaleAbs(image, alpha=1, beta=beta)
         results['img'] = dark_image_bgr
         return results
 

@@ -200,6 +200,7 @@ class SparseRefiner(BaseSegmentor):
         """
 
         inputs_dict = dict()
+
         inputs_dict["logits"] = torch.stack([data_sample.logits.data for data_sample in batch_data_samples])
         inputs_dict["image"] = inputs.permute(0, 2, 3, 1)
         inputs_dict["label"] = torch.stack([data_sample.gt_sem_seg.data for data_sample in batch_data_samples]).squeeze(1)

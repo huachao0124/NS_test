@@ -16,7 +16,7 @@ model = dict(
     type='SparseRefiner',
     selector=dict(
         type='EntropySelector',
-        threshold=0.1
+        threshold=0.05
     ),
     featurizer=dict(
         type='TorchSparseFeaturizer',

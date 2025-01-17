@@ -88,7 +88,9 @@ class LoadLogits(BaseTransform):
         self.data_path = data_path
 
     def transform(self, results: dict) -> dict:
-        results['logits'] = np.load(results['img_path'].replace('.png', '.npy').replace(self.data_path, self.seg_logits_path)).transpose(1, 2, 0)
+        logits = np.load(results['img_path'].replace('.png', '.npy').replace(self.data_path, self.seg_logits_path)).transpose(1, 2, 0)
+        logits = cv2.resize(logits, results['img'].shape[:2])
+        results['logits'] = logits
         results['seg_fields'].append('logits')
         return results
 

@@ -104,7 +104,6 @@ test_dataloader = val_dataloader
 max_epoch = 500
 
 optim_wrapper = dict(
-    _delete_=True,
     type='AmpOptimWrapper',
     optimizer=dict(
         type='AdamW', lr=0.0003, betas=(0.9, 0.999), weight_decay=0.05),

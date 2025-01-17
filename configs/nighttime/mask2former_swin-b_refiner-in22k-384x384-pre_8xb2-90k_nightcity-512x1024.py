@@ -56,7 +56,7 @@ crop_size = (512, 1024)
 # dataset config
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='LoadLogits', seg_logits_path='mmseg/nighttime_utils/output_logits/upernet_convnext', data_path='data'),
+    dict(type='LoadLogits', seg_logits_path='mmseg/nighttime_utils/output_logits/mask2former', data_path='data'),
     dict(type='LoadAnnotations'),
     dict(
         type='RandomChoiceResize',
@@ -71,7 +71,7 @@ train_pipeline = [
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='LoadLogits', seg_logits_path='mmseg/nighttime_utils/output_logits/upernet_convnext', data_path='data'),
+    dict(type='LoadLogits', seg_logits_path='mmseg/nighttime_utils/output_logits/mask2former', data_path='data'),
     dict(type='Resize', scale=(2048, 1024), keep_ratio=True),
     # add loading annotation after ``Resize`` because ground truth
     # does not need to do resize data transform

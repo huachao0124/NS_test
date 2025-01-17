@@ -120,3 +120,4 @@ mmseg/.mim
 *.pth
 *.zip
 ckpts/
+mmseg/nighttime_utils/output_logits/*

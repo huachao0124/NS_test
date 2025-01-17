@@ -2,11 +2,18 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from mmcv.cnn import ConvModule
+import torchsparse
 
 from mmseg.models.utils import resize
 from mmseg.registry import MODELS
 from mmseg.models.decode_heads.decode_head import BaseDecodeHead
 from .FreqFusion import FreqFusion
+
+from typing import List, Optional, Dict, Any
+from mmseg.utils import (ConfigType, OptConfigType, OptMultiConfig,
+                         OptSampleList, SampleList, add_prefix)
+from mmseg.models.segmentors.base import BaseSegmentor
+from torch import Tensor
 
 
 @MODELS.register_module()
@@ -133,25 +140,27 @@ class LearnableSelector(nn.Module):
 
 
 @MODELS.register_module()
-class SparseRefiner(nn.Module):
+class SparseRefiner(BaseSegmentor):
     def __init__(
         self,
-        threshold,
         selector,
         featurizer,
         backbone,
         classifier,
-        ensembler
+        ensembler,
+        loss_mask,
+        **kwargs
     ) -> None:
-        super().__init__()
-        self.threshold = threshold
+        super().__init__(**kwargs)
         self.selector = MODELS.build(selector)
         self.featurizer = MODELS.build(featurizer)
         self.backbone = MODELS.build(backbone)
-        self.classifier = MODELS.build(classifier)
+        # self.classifier = MODELS.build(classifier)
+        self.classifier = nn.Linear(32, 19)
         self.ensembler = MODELS.build(ensembler)
+        self.loss_mask = MODELS.build(loss_mask)
 
-    def forward(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+    def _forward(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         mask = self.selector(inputs)
         x = self.featurizer(inputs, mask)
         x = self.backbone(x).F
@@ -169,7 +178,7 @@ class SparseRefiner(nn.Module):
         for name in ["logits/i", "logits/o", "logits/e"]:
             y = logits.clone()
             y[mask] = outputs[name + "/mask"].to(dtype=y.dtype)
-            outputs[name + "/full"] = y
+            outputs[name + "/full"] = y.permute(0, 3, 1, 2)
 
         if "label" in inputs:
             outputs["label/full"] = inputs["label"]
@@ -177,7 +186,7 @@ class SparseRefiner(nn.Module):
 
         return outputs
     
-    def loss(self, inputs: Tensor, batch_data_samples: SampleList) -> dict:
+    def loss(self, inputs: torch.Tensor, batch_data_samples: SampleList) -> dict:
         """Calculate losses from a batch of inputs and data samples.
 
         Args:
@@ -191,9 +200,34 @@ class SparseRefiner(nn.Module):
         """
 
         inputs_dict = dict()
-
-        x = self(inputs)
+        inputs_dict["logits"] = torch.stack([data_sample.logits.data for data_sample in batch_data_samples])
+        inputs_dict["image"] = inputs.permute(0, 2, 3, 1)
+        inputs_dict["label"] = torch.stack([data_sample.gt_sem_seg.data for data_sample in batch_data_samples]).squeeze(1)
+        outputs = self._forward(inputs_dict)
 
         losses = dict()
+        losses['loss_mask_output'] = self.loss_mask(outputs['logits/o/mask'], outputs['label/mask'])
+        losses['loss_mask_ensemble'] = self.loss_mask(outputs['logits/e/mask'], outputs['label/mask'])
 
         return losses
+
+    def predict(self,
+                inputs: Tensor,
+                data_samples: OptSampleList = None) -> SampleList:
+        """Predict results from a batch of inputs and data samples with post-
+        processing."""
+        outputs = self._forward(inputs)
+        seg_logits = outputs['logits/e/full']
+        return self.postprocess_result(seg_logits, data_samples)
+
+    def extract_feat(self, inputs: Tensor) -> bool:
+        """Placeholder for extract features from images."""
+        pass
+
+    def encode_decode(self, inputs: Tensor, batch_data_samples: SampleList):
+        """Placeholder for encode images with backbone and decode into a
+        semantic segmentation map of the same size as input."""
+        outputs = self._forward(inputs)
+        seg_logits = outputs['logits/e/full']
+        return seg_logits
+    

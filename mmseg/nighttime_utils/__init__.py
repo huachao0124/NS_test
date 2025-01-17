@@ -3,7 +3,9 @@ from .dark_noising import AddNoisyImg
 from .psp_head_freq import PSPHeadFreqAware
 from .ham_head_freq import LightHamHeadFreqAware
 from .pixel_decoder_freq import MSDeformAttnPixelDecoderFreqAware
+from .refiner import EntropyEnsembler, EntropySelector
+from .sparserefine import *
 
 __all__ = [
-    'HSVDarker'
+    'HSVDarker', 'EntropySelector'
 ]

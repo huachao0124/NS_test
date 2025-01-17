@@ -28,6 +28,12 @@ import json
 import glob
 from PIL import Image
 
+from mmcv.transforms import to_tensor
+from mmengine.structures import PixelData
+
+from mmseg.structures import SegDataSample
+from mmseg.datasets.transforms import PackSegInputs
+
 
 @TRANSFORMS.register_module()
 class HSVDarker(BaseTransform):
@@ -77,10 +83,86 @@ class MotionBlur(BaseTransform):
 
 @TRANSFORMS.register_module()
 class LoadLogits(BaseTransform):
-    def __init__(self):
-        self.param_map = dict()
+    def __init__(self, seg_logits_path, data_path):
+        self.seg_logits_path = seg_logits_path
+        self.data_path = data_path
 
     def transform(self, results: dict) -> dict:
-        print("X" * 100)
-        print(results['img_path'])
+        results['logits'] = np.load(results['img_path'].replace('.png', '.npy').replace(self.data_path, self.seg_logits_path)).transpose(1, 2, 0)
+        results['seg_fields'].append('logits')
         return results
+
+
+@TRANSFORMS.register_module()
+class PackSegInputsWithLogits(PackSegInputs):
+
+    def transform(self, results: dict) -> dict:
+        """Method to pack the input data.
+
+        Args:
+            results (dict): Result dict from the data pipeline.
+
+        Returns:
+            dict:
+
+            - 'inputs' (obj:`torch.Tensor`): The forward data of models.
+            - 'data_sample' (obj:`SegDataSample`): The annotation info of the
+                sample.
+        """
+        packed_results = dict()
+        if 'img' in results:
+            img = results['img']
+            if len(img.shape) < 3:
+                img = np.expand_dims(img, -1)
+            if not img.flags.c_contiguous:
+                img = to_tensor(np.ascontiguousarray(img.transpose(2, 0, 1)))
+            else:
+                img = img.transpose(2, 0, 1)
+                img = to_tensor(img).contiguous()
+            packed_results['inputs'] = img
+
+        data_sample = SegDataSample()
+        if 'gt_seg_map' in results:
+            if len(results['gt_seg_map'].shape) == 2:
+                data = to_tensor(results['gt_seg_map'][None,
+                                                       ...].astype(np.int64))
+            else:
+                warnings.warn('Please pay attention your ground truth '
+                              'segmentation map, usually the segmentation '
+                              'map is 2D, but got '
+                              f'{results["gt_seg_map"].shape}')
+                data = to_tensor(results['gt_seg_map'].astype(np.int64))
+            gt_sem_seg_data = dict(data=data)
+            data_sample.gt_sem_seg = PixelData(**gt_sem_seg_data)
+
+        if 'gt_edge_map' in results:
+            gt_edge_data = dict(
+                data=to_tensor(results['gt_edge_map'][None,
+                                                      ...].astype(np.int64)))
+            data_sample.set_data(dict(gt_edge_map=PixelData(**gt_edge_data)))
+
+        if 'gt_depth_map' in results:
+            gt_depth_data = dict(
+                data=to_tensor(results['gt_depth_map'][None, ...]))
+            data_sample.set_data(dict(gt_depth_map=PixelData(**gt_depth_data)))
+        
+        if 'logits' in results:
+            logits_data = dict(
+                data=to_tensor(results['logits']))
+            data_sample.set_data(dict(logits=PixelData(**logits_data)))
+
+        img_meta = {}
+        for key in self.meta_keys:
+            if key in results:
+                img_meta[key] = results[key]
+        data_sample.set_metainfo(img_meta)
+        packed_results['data_samples'] = data_sample
+
+        return packed_results
+
+    def __repr__(self) -> str:
+        repr_str = self.__class__.__name__
+        repr_str += f'(meta_keys={self.meta_keys})'
+        return repr_str
+
+

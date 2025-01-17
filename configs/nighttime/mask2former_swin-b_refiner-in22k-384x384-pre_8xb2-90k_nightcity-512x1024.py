@@ -63,6 +63,7 @@ train_pipeline = [
         scales=[int(1024 * x * 0.1) for x in range(5, 21)],
         resize_type='ResizeShortestEdge',
         max_size=4096),
+    dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
     dict(type='RandomFlip', prob=0.5),
     dict(type='PhotoMetricDistortion'),
     dict(type='PackSegInputsWithLogits')

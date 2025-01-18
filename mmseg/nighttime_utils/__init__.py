@@ -5,7 +5,8 @@ from .ham_head_freq import LightHamHeadFreqAware
 from .pixel_decoder_freq import MSDeformAttnPixelDecoderFreqAware
 from .refiner import EntropyEnsembler, EntropySelector
 from .sparserefine import *
+from .visualizer import ComposedVisualizer
 
 __all__ = [
-    'HSVDarker', 'EntropySelector'
+    'HSVDarker', 'EntropySelector', 'ComposedVisualizer'
 ]

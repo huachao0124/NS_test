@@ -101,7 +101,7 @@ TASK_UTILS = Registry(
 VISUALIZERS = Registry(
     'visualizer',
     parent=MMENGINE_VISUALIZERS,
-    locations=['mmseg.visualization'])
+    locations=['mmseg.visualization', 'mmseg.nighttime_utils'])
 # manage visualizer backend
 VISBACKENDS = Registry(
     'vis_backend',

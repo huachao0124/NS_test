@@ -66,3 +66,9 @@ val_dataloader = dict(
         img_suffix='.png',
         seg_map_suffix='_trainIds.png'))
 test_dataloader = val_dataloader
+
+vis_backends = [dict(type='LocalVisBackend')]
+visualizer = dict(
+    type='ComposedVisualizer', vis_backends=vis_backends, name='visualizer')
+
+default_hooks = dict(visualization=dict(type='SegVisualizationHook', draw=True, interval=20))

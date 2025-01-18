@@ -100,7 +100,7 @@ class BitZero(BaseTransform):
         self.num_bits = num_bits
 
     def transform(self, results: dict) -> dict:
-        results['img'] &= (0xFF << self.num_bits)
+        results['img'] &= np.uint8(0xFF << self.num_bits)
         return results
 
 @TRANSFORMS.register_module()

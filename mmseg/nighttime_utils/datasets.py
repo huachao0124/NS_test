@@ -95,7 +95,7 @@ class LoadLogits(BaseTransform):
         return results
 
 
-class BitZero(BaseTransform)
+class BitZero(BaseTransform):
     def __init__(self, num_bits = 3):
         self.num_bits = num_bits
 

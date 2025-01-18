@@ -149,6 +149,7 @@ class SparseRefiner(BaseSegmentor):
         classifier,
         ensembler,
         loss_mask,
+        align_corners=False,
         **kwargs
     ) -> None:
         super().__init__(**kwargs)
@@ -159,6 +160,7 @@ class SparseRefiner(BaseSegmentor):
         self.classifier = nn.Linear(32, 19)
         self.ensembler = MODELS.build(ensembler)
         self.loss_mask = MODELS.build(loss_mask)
+        self.align_corners = align_corners
 
     def _forward(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         mask = self.selector(inputs)
@@ -217,7 +219,10 @@ class SparseRefiner(BaseSegmentor):
                 data_samples: OptSampleList = None) -> SampleList:
         """Predict results from a batch of inputs and data samples with post-
         processing."""
-        outputs = self._forward(inputs)
+        inputs_dict = dict()
+        inputs_dict["logits"] = torch.stack([data_sample.logits.data for data_sample in data_samples])
+        inputs_dict["image"] = inputs.permute(0, 2, 3, 1)
+        outputs = self._forward(inputs_dict)
         seg_logits = outputs['logits/e/full']
         return self.postprocess_result(seg_logits, data_samples)
 

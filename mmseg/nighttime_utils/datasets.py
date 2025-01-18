@@ -95,6 +95,14 @@ class LoadLogits(BaseTransform):
         return results
 
 
+class BitZero(BaseTransform)
+    def __init__(self, num_bits = 3):
+        self.num_bits = num_bits
+
+    def transform(self, results: dict) -> dict:
+        results['img'] &= (0xFF << self.num_bits)
+        return results
+
 @TRANSFORMS.register_module()
 class PackSegInputsWithLogits(PackSegInputs):
 

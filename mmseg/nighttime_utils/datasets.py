@@ -94,7 +94,7 @@ class LoadLogits(BaseTransform):
         results['seg_fields'].append('logits')
         return results
 
-
+@TRANSFORMS.register_module()
 class BitZero(BaseTransform):
     def __init__(self, num_bits = 3):
         self.num_bits = num_bits

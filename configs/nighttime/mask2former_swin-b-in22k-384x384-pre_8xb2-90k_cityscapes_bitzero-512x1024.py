@@ -71,3 +71,9 @@ test_pipeline = [
     dict(type='PackSegInputs')
 ]
 test_dataloader = dict(dataset=dict(pipeline=test_pipeline))
+
+vis_backends = [dict(type='LocalVisBackend')]
+visualizer = dict(
+    type='ComposedVisualizer', vis_backends=vis_backends, name='visualizer')
+
+default_hooks = dict(visualization=dict(type='SegVisualizationHook', draw=True, interval=5))

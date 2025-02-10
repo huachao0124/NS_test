@@ -104,6 +104,16 @@ class BitZero(BaseTransform):
         return results
 
 @TRANSFORMS.register_module()
+class EnhanceEdge(BaseTransform):
+    def transform(self, results: dict) -> dict:
+        edges = cv2.Canny(results['gt_seg_map'].astype(np.uint8), threshold1=100, threshold2=200)
+        kernel = np.ones((2, 2), np.uint8)
+        edges = cv2.dilate(edges, kernel, iterations=1)
+        mask = edges > 0
+        results['img'][mask] = 255
+        return results
+
+@TRANSFORMS.register_module()
 class PackSegInputsWithLogits(PackSegInputs):
 
     def transform(self, results: dict) -> dict:

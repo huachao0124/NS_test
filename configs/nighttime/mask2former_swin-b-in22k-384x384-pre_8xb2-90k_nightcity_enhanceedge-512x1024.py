@@ -46,8 +46,8 @@ crop_size = (512, 1024)
 # dataset config
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='BitZero'),
     dict(type='LoadAnnotations'),
+    dict(type='EnhanceEdge'),
     dict(
         type='RandomChoiceResize',
         scales=[int(1024 * x * 0.1) for x in range(5, 21)],
@@ -61,7 +61,7 @@ train_pipeline = [
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
-    # dict(type='BitZero'),
+    # dict(type='EnhanceEdge'),
     dict(type='Resize', scale=(2048, 1024), keep_ratio=True),
     # add loading annotation after ``Resize`` because ground truth
     # does not need to do resize data transform

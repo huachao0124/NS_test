@@ -88,14 +88,14 @@ PARAM_SCHEDULERS = Registry(
 
 # manage all kinds of metrics
 METRICS = Registry(
-    'metric', parent=MMENGINE_METRICS, locations=['mmseg.evaluation'])
+    'metric', parent=MMENGINE_METRICS, locations=['mmseg.evaluation', 'mmseg.nighttime_utils'])
 # manage evaluator
 EVALUATOR = Registry(
     'evaluator', parent=MMENGINE_EVALUATOR, locations=['mmseg.evaluation'])
 
 # manage task-specific modules like ohem pixel sampler
 TASK_UTILS = Registry(
-    'task util', parent=MMENGINE_TASK_UTILS, locations=['mmseg.models'])
+    'task util', parent=MMENGINE_TASK_UTILS, locations=['mmseg.models', 'mmseg.nighttime_utils'])
 
 # manage visualizer
 VISUALIZERS = Registry(

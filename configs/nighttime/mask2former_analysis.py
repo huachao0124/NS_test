@@ -3,6 +3,7 @@ pretrained = 'ckpts/swin_base_patch4_window12_384_22k_20220317-e5c09f74.pth'  # 
 
 depths = [2, 2, 18, 2]
 model = dict(
+    type='EncoderDecoderAnalysis',
     backbone=dict(
         pretrain_img_size=384,
         embed_dims=128,
@@ -41,34 +42,7 @@ custom_keys.update({
 optim_wrapper = dict(
     paramwise_cfg=dict(custom_keys=custom_keys, norm_decay_mult=0.0))
 
-
-crop_size = (512, 1024)
-# dataset config
-train_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations'),
-    dict(type='EnhanceEdge'),
-    dict(
-        type='RandomChoiceResize',
-        scales=[int(1024 * x * 0.1) for x in range(5, 21)],
-        resize_type='ResizeShortestEdge',
-        max_size=4096),
-    dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
-    dict(type='RandomFlip', prob=0.5),
-    dict(type='PhotoMetricDistortion'),
-    dict(type='PackSegInputs')
-]
-
-test_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='Resize', scale=(2048, 1024), keep_ratio=True),
-    # add loading annotation after ``Resize`` because ground truth
-    # does not need to do resize data transform
-    dict(type='LoadAnnotations'),
-    dict(type='EnhanceEdge'),
-    dict(type='PackSegInputs')
-]
-
+# dataset settings
 train_data_root = 'data/nightcity-fine/'
 test_data_root = 'data/nightcity-fine/'
 train_dataloader = dict(
@@ -77,17 +51,18 @@ train_dataloader = dict(
         data_prefix=dict(
             img_path='train/img', seg_map_path='train/lbl'),
         img_suffix='.png',
-        seg_map_suffix='_trainIds.png',
-        pipeline=train_pipeline))
+        seg_map_suffix='_trainIds.png'))
 val_dataloader = dict(
     dataset=dict(
         data_root=test_data_root,
         data_prefix=dict(
             img_path='val/img', seg_map_path='val/lbl'),
         img_suffix='.png',
-        seg_map_suffix='_trainIds.png',
-        pipeline=test_pipeline))
+        seg_map_suffix='_trainIds.png'))
 test_dataloader = val_dataloader
+
+# val_evaluator = dict(type='BlankMetric')
+# test_evaluator = val_evaluator
 
 vis_backends = [dict(type='LocalVisBackend')]
 visualizer = dict(

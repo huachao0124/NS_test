@@ -29,6 +29,8 @@ from collections import OrderedDict
 import pandas as pd
 from scipy.optimize import linear_sum_assignment
 from mmengine import ConfigDict
+from mmengine.dist import is_main_process
+import os.path as osp
 
 
 def pairwise_mask_iou(masks1: torch.Tensor, masks2: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
@@ -367,7 +369,7 @@ class BlankMetric(BaseMetric):
 
         
         df = pd.DataFrame(ems_sum, index=labels[:ems_sum.shape[0]], columns=labels[:ems_sum.shape[0]])
-        df.to_csv('error_matrix_0.3.csv')
+        df.to_csv('error_matrix.csv')
 
 
         np.savetxt('error_matrix_2.txt', ems_sum.squeeze(), fmt='%5d')

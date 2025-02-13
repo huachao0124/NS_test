@@ -78,14 +78,16 @@ class EncoderDecoderAnalysis(EncoderDecoder):
         cls_score = F.softmax(mask_cls_results, dim=-1)[..., :-1]
         mask_pred = mask_pred_results.sigmoid()
 
-        mask = cls_score < 0.3
-        cls_score[mask] = 0
+        # mask = cls_score < 0.3
+        # cls_score[mask] = 0
 
         # modify
-        mask_pred_binary = (mask_pred >= 0.5).long()
-        ems, matched_labels = self.get_targets(mask_cls_results, mask_pred_binary, batch_gt_instances, batch_img_metas)
+        # mask_pred_binary = (mask_pred >= 0.5).long()
+        mask_pred_binary = mask_pred.clone()
+        ems, matched_labels, matched_masks = self.get_targets(mask_cls_results, mask_pred_binary, batch_gt_instances, batch_img_metas)
 
         # cls_score = torch.zeros_like(mask_cls_results).scatter_(dim=-1, index=matched_labels.unsqueeze(-1), value=1)[..., :-1]
+        mask_pred = matched_masks.float()
 
         seg_logits = torch.einsum('bqc, bqhw->bchw', cls_score, mask_pred)
 
@@ -136,11 +138,13 @@ class EncoderDecoderAnalysis(EncoderDecoder):
                               batch_img_metas)
         ems = results[0]
         matched_labels = results[1]
+        matched_masks = results[2]
 
         ems = torch.stack(ems)
         matched_labels = torch.stack(matched_labels)
+        matched_masks = torch.stack(matched_masks)
 
-        return ems, matched_labels
+        return ems, matched_labels, matched_masks
 
 
     def _get_targets_single(self, cls_score: Tensor, mask_pred: Tensor,
@@ -196,7 +200,10 @@ class EncoderDecoderAnalysis(EncoderDecoder):
 
         em = compute_error_matrix(matched_labels, pred_labels, cls_score.shape[-1])
 
-        return em, matched_labels
+        matched_masks = gt_masks.new_zeros((self.decode_head.num_queries, *gt_masks.shape[-2:]))
+        matched_masks[pos_inds] = gt_masks[sampling_result.pos_assigned_gt_inds]
+
+        return em, matched_labels, matched_masks
 
 
     def postprocess_result(self,

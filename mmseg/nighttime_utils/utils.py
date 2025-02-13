@@ -57,14 +57,14 @@ def pairwise_mask_dice(mask_preds: Tensor, gt_masks: Tensor) -> Tensor:
 
     mask_preds = mask_preds.flatten(1)
     gt_masks = gt_masks.flatten(1).float()
-    numerator = 2 * torch.einsum('nc,mc->nm', mask_preds, gt_masks)
+    numerator = 2 * torch.einsum('nc,mc->nm', mask_preds.float(), gt_masks.float())
     if naive_dice:
         denominator = mask_preds.sum(-1)[:, None] + \
                         gt_masks.sum(-1)[None, :]
     else:
         denominator = mask_preds.pow(2).sum(1)[:, None] + \
                         gt_masks.pow(2).sum(1)[None, :]
-    loss = 1 - (numerator + eps) / (denominator + eps)
+    loss = (numerator + eps) / (denominator + eps)
     return loss
 
 def o2o_mask_dice(mask_preds: Tensor, gt_masks: Tensor) -> Tensor:
@@ -142,7 +142,8 @@ class MaskMaxIoUAssigner(BaseAssigner):
                                      device=device)
 
 
-        overlaps = pairwise_mask_iou(pred_masks, gt_masks)
+        # overlaps = pairwise_mask_iou(pred_masks, gt_masks)
+        overlaps = pairwise_mask_dice(pred_masks, gt_masks)
 
         overlaps_max, indices = torch.max(overlaps, dim=1)
 
@@ -151,9 +152,9 @@ class MaskMaxIoUAssigner(BaseAssigner):
         matched_row_inds = matched_row_inds.to(device)
         matched_col_inds = matched_col_inds.to(device)
         
-        mask = overlaps_max > 0.1
-        matched_row_inds = matched_row_inds[mask]
-        matched_col_inds = matched_col_inds[mask]
+        # mask = overlaps_max > 0.1
+        # matched_row_inds = matched_row_inds[mask]
+        # matched_col_inds = matched_col_inds[mask]
 
         assigned_gt_inds[:] = 0
         # assign foregrounds based on matching results

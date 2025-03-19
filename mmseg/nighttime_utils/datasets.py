@@ -34,6 +34,9 @@ from mmengine.structures import PixelData
 from mmseg.structures import SegDataSample
 from mmseg.datasets.transforms import PackSegInputs
 
+from skimage.feature import local_binary_pattern
+import torch
+
 
 @TRANSFORMS.register_module()
 class HSVDarker(BaseTransform):
@@ -103,6 +106,16 @@ class BitZero(BaseTransform):
         results['img'] &= np.uint8(0xFF << self.num_bits)
         return results
 
+
+@TRANSFORMS.register_module()
+class UpBitZero(BaseTransform):
+    def __init__(self, num_bits = 3):
+        self.num_bits = num_bits
+
+    def transform(self, results: dict) -> dict:
+        results['img'] &= ~np.uint8(0xFF << (8 - self.num_bits))
+        return results
+
 @TRANSFORMS.register_module()
 class EnhanceEdge(BaseTransform):
     def transform(self, results: dict) -> dict:
@@ -111,6 +124,121 @@ class EnhanceEdge(BaseTransform):
         edges = cv2.dilate(edges, kernel, iterations=1)
         mask = edges > 0
         results['img'][mask] = 255
+        return results
+    
+
+def lbp_to_6channels_unpackbits(lbp):
+    # 确保数据类型是uint8
+    lbp_uint8 = lbp.astype(np.uint8)
+    # 展开为二进制，然后取后6位
+    binary = np.unpackbits(lbp_uint8[...,None], axis=2)
+    return binary[...,-6:].astype(np.uint8)
+
+def lbp_to_8channels_unpackbits(lbp):
+    # 确保数据类型是uint8
+    lbp_uint8 = lbp.astype(np.uint8)
+    # 展开为二进制，然后取后6位
+    binary = np.unpackbits(lbp_uint8[...,None], axis=2)
+    return binary[...,-8:].astype(np.uint8)
+
+def nrlbp(image, P=8, R=1, epsilon=3):
+    rows, cols = image.shape
+    lbp = np.zeros((rows, cols), dtype=np.uint8)
+    for i in range(R, rows-R):
+        for j in range(R, cols-R):
+            center = image[i,j]
+            code = 0
+            for k in range(P):
+                x = i + R * np.cos(2*np.pi*k/P)
+                y = j - R * np.sin(2*np.pi*k/P)
+                x, y = int(x), int(y)
+                if abs(int(image[x,y]) - int(center)) <= epsilon:
+                    bit = 0
+                elif image[x,y] > center:
+                    bit = 1
+                else:
+                    bit = 0
+                code |= (bit << k)
+            lbp[i,j] = code  # 将计算的code赋值给result
+    return lbp
+
+def nrlbp_fast(image, P=8, R=1, epsilon=3):
+    """快速NRLBP实现"""
+    rows, cols = image.shape
+    # 预计算采样点的坐标偏移
+    angles = 2 * np.pi * np.arange(P) / P
+    x_offsets = R * np.cos(angles)
+    y_offsets = -R * np.sin(angles)  # 注意图像坐标系y轴向下
+    # 创建结果数组
+    result = np.zeros_like(image)
+    # 计算有效区域
+    valid_rows = slice(R, rows-R)
+    valid_cols = slice(R, cols-R)
+    # 中心像素值
+    center = image[valid_rows, valid_cols]
+    # 初始化编码
+    codes = np.zeros_like(center, dtype=np.uint8)
+    
+    # 对每个采样点进行计算
+    for k in range(P):
+        # 计算采样点坐标
+        x = np.round(np.arange(R, rows-R)[:, None] + x_offsets[k]).astype(np.int32)
+        y = np.round(np.arange(R, cols-R)[None, :] + y_offsets[k]).astype(np.int32)
+        # 获取采样点的值
+        neighbors = image[x, y]
+        # 计算差值
+        diff = neighbors - center
+        # NRLBP编码规则
+        codes = codes.astype(np.uint8) | ((diff > epsilon).astype(np.uint8) << k)
+    
+    # 保存结果
+    result[valid_rows, valid_cols] = codes
+    
+    return result
+
+
+@TRANSFORMS.register_module()
+class LBP(BaseTransform):
+    def __init__(self, mode: str = 'uniform'):
+        self.mode = mode
+    
+    def transform(self, results: dict) -> dict:
+        image = results['img']
+        hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        if self.mode == 'nrlbp':
+            lbp = nrlbp_fast(hsv_image[:, :, 2])
+        else:
+            lbp = local_binary_pattern(hsv_image[:, :, 2], P=8, R=1, method=self.mode)
+        if self.mode == 'uniform' or self.mode == 'ror':
+            lbp = lbp_to_6channels_unpackbits(lbp)
+        elif self.mode == 'default' or self.mode == 'nrlbp':
+            lbp = lbp_to_8channels_unpackbits(lbp)
+        results['lbp'] = torch.from_numpy(lbp).permute(2, 0, 1).float()
+        return results
+
+
+@TRANSFORMS.register_module()
+class MultiScaleLBP(BaseTransform):
+    def __init__(self, mode: str = 'uniform', num_scales=3):
+        self.mode = mode
+        self.num_scales = num_scales
+    
+    def transform(self, results: dict) -> dict:
+        image = results['img']
+        hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        lbps = []
+        for i in range(self.num_scales):
+            if self.mode == 'nrlbp':
+                lbp = nrlbp_fast(hsv_image[:, :, 2], P=8, R=i+1)
+            else:
+                lbp = local_binary_pattern(hsv_image[:, :, 2], P=8, R=i+1, method=self.mode)
+            if self.mode == 'uniform' or self.mode == 'ror':
+                lbp = lbp_to_6channels_unpackbits(lbp)
+            elif self.mode == 'default' or self.mode == 'nrlbp':
+                lbp = lbp_to_8channels_unpackbits(lbp)
+            lbps.append(lbp)
+        lbp_res = np.concatenate(lbps, axis=-1)
+        results['lbp'] = torch.from_numpy(lbp_res).permute(2, 0, 1).float()
         return results
 
 @TRANSFORMS.register_module()

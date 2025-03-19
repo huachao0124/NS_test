@@ -3,7 +3,6 @@ pretrained = 'ckpts/swin_base_patch4_window12_384_22k_20220317-e5c09f74.pth'  # 
 
 depths = [2, 2, 18, 2]
 model = dict(
-    type='EncoderDecoderAnalysis',
     backbone=dict(
         pretrain_img_size=384,
         embed_dims=128,
@@ -11,10 +10,7 @@ model = dict(
         num_heads=[4, 8, 16, 32],
         window_size=12,
         init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
-    decode_head=dict(in_channels=[128, 256, 512, 1024],
-                    type='Mask2FormerHead',
-                    num_queries=100,
-                     ))
+    decode_head=dict(in_channels=[128, 256, 512, 1024]))
 
 # set all layers in backbone to lr_mult=0.1
 # set all norm layers, position_embeding,
@@ -46,8 +42,8 @@ optim_wrapper = dict(
     paramwise_cfg=dict(custom_keys=custom_keys, norm_decay_mult=0.0))
 
 # dataset settings
-train_data_root = 'data/nightcity-fine/'
-test_data_root = 'data/nightcity-fine/'
+train_data_root = 'data/nightcity-motion_deblur/'
+test_data_root = 'data/nightcity-motion_deblur/'
 train_dataloader = dict(
     dataset=dict(
         data_root=train_data_root,
@@ -63,9 +59,6 @@ val_dataloader = dict(
         img_suffix='.png',
         seg_map_suffix='_trainIds.png'))
 test_dataloader = val_dataloader
-
-# val_evaluator = dict(type='BlankMetric')
-# test_evaluator = val_evaluator
 
 vis_backends = [dict(type='LocalVisBackend')]
 visualizer = dict(

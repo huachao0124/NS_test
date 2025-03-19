@@ -2,8 +2,8 @@ _base_ = ['../mask2former/mask2former_swin-t_8xb2-90k_cityscapes-512x1024.py']
 pretrained = 'ckpts/swin_base_patch4_window12_384_22k_20220317-e5c09f74.pth'  # noqa
 
 depths = [2, 2, 18, 2]
+num_classes = 19
 model = dict(
-    type='EncoderDecoderAnalysis',
     backbone=dict(
         pretrain_img_size=384,
         embed_dims=128,
@@ -12,9 +12,26 @@ model = dict(
         window_size=12,
         init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
     decode_head=dict(in_channels=[128, 256, 512, 1024],
-                    type='Mask2FormerHead',
-                    num_queries=100,
-                     ))
+                    type='Mask2FormerHeadContrast4',
+                    num_queries=95,
+                    train_cfg=dict(
+                        assigner=dict(
+                            type='mmdet.HungarianAssigner',
+                            match_costs=[
+                                dict(type='mmdet.ClassificationCost', weight=2.0),
+                                dict(
+                                    type='mmdet.CrossEntropyLossCost',
+                                    weight=5.0,
+                                    use_sigmoid=True),
+                                dict(
+                                    type='mmdet.DiceCost',
+                                    weight=5.0,
+                                    pred_act=True,
+                                    eps=1.0),
+                                dict(
+                                    type='GroupMatchingFixedCost'
+                                )
+                            ]),),))
 
 # set all layers in backbone to lr_mult=0.1
 # set all norm layers, position_embeding,

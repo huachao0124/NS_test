@@ -8,6 +8,7 @@ from .sparserefine import *
 from .visualizer import ComposedVisualizer
 from .utils import MaskMaxIoUAssigner
 from .models import EncoderDecoderAnalysis
+from .hooks import ClsEmbSimHook
 
 __all__ = [
     'HSVDarker',

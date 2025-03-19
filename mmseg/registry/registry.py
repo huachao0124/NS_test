@@ -41,7 +41,7 @@ RUNNER_CONSTRUCTORS = Registry(
 LOOPS = Registry('loop', parent=MMENGINE_LOOPS)
 # manage all kinds of hooks like `CheckpointHook`
 HOOKS = Registry(
-    'hook', parent=MMENGINE_HOOKS, locations=['mmseg.engine.hooks'])
+    'hook', parent=MMENGINE_HOOKS, locations=['mmseg.engine.hooks', 'mmseg.nighttime_utils'])
 
 # manage data-related modules
 DATASETS = Registry(

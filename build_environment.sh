@@ -15,3 +15,4 @@ pip install -v -e .
 pip install ftfy
 TORCH_CUDA_ARCH_LIST="8.0 9.0" pip install git+https://github.com/mit-han-lab/torchsparse
 python -m pip install ujson
+pip install info-nce-pytorch

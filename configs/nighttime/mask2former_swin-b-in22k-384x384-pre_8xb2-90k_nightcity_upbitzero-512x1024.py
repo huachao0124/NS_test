@@ -3,7 +3,6 @@ pretrained = 'ckpts/swin_base_patch4_window12_384_22k_20220317-e5c09f74.pth'  # 
 
 depths = [2, 2, 18, 2]
 model = dict(
-    type='EncoderDecoderAnalysis',
     backbone=dict(
         pretrain_img_size=384,
         embed_dims=128,
@@ -11,10 +10,7 @@ model = dict(
         num_heads=[4, 8, 16, 32],
         window_size=12,
         init_cfg=dict(type='Pretrained', checkpoint=pretrained)),
-    decode_head=dict(in_channels=[128, 256, 512, 1024],
-                    type='Mask2FormerHead',
-                    num_queries=100,
-                     ))
+    decode_head=dict(in_channels=[128, 256, 512, 1024]))
 
 # set all layers in backbone to lr_mult=0.1
 # set all norm layers, position_embeding,
@@ -45,7 +41,34 @@ custom_keys.update({
 optim_wrapper = dict(
     paramwise_cfg=dict(custom_keys=custom_keys, norm_decay_mult=0.0))
 
-# dataset settings
+
+crop_size = (512, 1024)
+# dataset config
+train_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(type='UpBitZero'),
+    dict(type='LoadAnnotations'),
+    dict(
+        type='RandomChoiceResize',
+        scales=[int(1024 * x * 0.1) for x in range(5, 21)],
+        resize_type='ResizeShortestEdge',
+        max_size=4096),
+    dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PhotoMetricDistortion'),
+    dict(type='PackSegInputs')
+]
+
+test_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(type='UpBitZero'),
+    dict(type='Resize', scale=(2048, 1024), keep_ratio=True),
+    # add loading annotation after ``Resize`` because ground truth
+    # does not need to do resize data transform
+    dict(type='LoadAnnotations'),
+    dict(type='PackSegInputs')
+]
+
 train_data_root = 'data/nightcity-fine/'
 test_data_root = 'data/nightcity-fine/'
 train_dataloader = dict(
@@ -54,18 +77,17 @@ train_dataloader = dict(
         data_prefix=dict(
             img_path='train/img', seg_map_path='train/lbl'),
         img_suffix='.png',
-        seg_map_suffix='_trainIds.png'))
+        seg_map_suffix='_trainIds.png',
+        pipeline=train_pipeline))
 val_dataloader = dict(
     dataset=dict(
         data_root=test_data_root,
         data_prefix=dict(
             img_path='val/img', seg_map_path='val/lbl'),
         img_suffix='.png',
-        seg_map_suffix='_trainIds.png'))
+        seg_map_suffix='_trainIds.png',
+        pipeline=test_pipeline))
 test_dataloader = val_dataloader
-
-# val_evaluator = dict(type='BlankMetric')
-# test_evaluator = val_evaluator
 
 vis_backends = [dict(type='LocalVisBackend')]
 visualizer = dict(
